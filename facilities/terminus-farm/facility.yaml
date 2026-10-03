@@ -9,7 +9,9 @@ lon: 86.896
 lat: -38.142
 operator: Daoya (稻芽)
 log_transitions: false
-epoch: "2026-09-01T00:00:00Z"
+epoch: "2219-09-01T00:00:00Z"
+since: 2158
+since_note: "Terminus was built from 2156 to 2158 as a farming city."
 summary: >-
   A 2 ha LED-lit growth hall of wheat and soybean. Lights run 16 hours of each sol; air
   temperature and CO2 enrichment follow them, and the crop's growth follows the light and

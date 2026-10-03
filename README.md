@@ -27,7 +27,8 @@ web/                            the dashboard (plain HTML, CSS and JS; charts wi
 .github/workflows/update.yml    runs sim/update.py hourly, publishes data, deploys Pages
 ```
 
-- **Pseudo-live.** Each plant's clock starts at its `epoch` (1 September 2026). A run advances it to the last whole 10 minutes before now. The engine is saved between runs (`Engine.snapshot()`), so the history is one continuous run.
+- **Story time.** The site is set in the present of the [InterImm book](https://book.interimm.org/history/mars_immigration/): 2219, the year terraforming begins. Every date is real time plus a fixed 70,491 days (`STORY_SHIFT` in `sim/update.py`), so 3 October 2026 reads as 3 October 2219; around leap years the story date can be a day behind. Epochs, file names, logs, releases and `--now` are all in story time. Each facility's `since` is its first year in service, from the book.
+- **Pseudo-live.** Each plant's clock starts at its `epoch` (1 September 2219). A run advances it to the last whole 10 minutes before now. The engine is saved between runs (`Engine.snapshot()`), so the history is one continuous run.
 - **Deterministic.** The same scenario and the same Homeostat and NumPy versions always give the same data, so if a saved engine cannot be used (a changed scenario, other versions), the plant is replayed from its epoch. `requirements.txt` pins the versions for that reason.
 - **Realistic, not real.** Control loops, instrument lag, noise, quantization and drift, production plans, catalyst decay, fouling, valve wear, scheduled maintenance and random instrument faults all come from Homeostat. Sizes, yields and energy use come from the sources listed per facility.
 - **Operators' view.** The data is what a plant historian would record: measured values, setpoints and controller outputs. Planned work is published 30 days ahead; faults are not announced, they only show in the data.
@@ -46,6 +47,7 @@ The workflow keeps the current data on the `data` branch (one commit, replaced e
 | `<id>/log.json` | Operations log: mode changes and maintenance |
 | `<id>/state/` | The saved engine (not published on the site) |
 | `releases.json` | Months already bundled into releases |
+| `timeline.json` | The story-time shift and the epochs the data was made with; if either changes, the next run sets the old data aside and starts over |
 
 Every finished month of 10-minute data is also bundled into a zip and published as a [GitHub Release](https://github.com/InterImm/mars-open-facilities/releases) tagged `data-YYYY-MM` (`sim/archive.py`). Daily files leave the `data` branch only after their month is released, so the full-resolution history is always in one place or the other.
 
@@ -55,7 +57,7 @@ Every finished month of 10-minute data is also bundled into a zip and published 
 python -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 python sim/update.py --data data            # advance to now (the first run compiles each plant, a few minutes)
-python sim/update.py --data data --now 2026-09-10T00:00:00Z --only sirius-air
+python sim/update.py --data data --now 2219-09-10T00:00:00Z --only sirius-air
 mkdir -p _site && cp -r web/. _site/ && cp -r data _site/data && python -m http.server -d _site
 ```
 

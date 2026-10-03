@@ -8,7 +8,9 @@ region_zh: 伊希地城市圈
 lon: 84.624
 lat: 16.181
 operator: UPI (United Planetary Industries)
-epoch: "2026-09-01T00:00:00Z"
+epoch: "2219-09-01T00:00:00Z"
+since: 2069
+since_note: "Running before the pioneers landed in April 2070 (book: Mars immigration)."
 summary: >-
   Methane and oxygen for the surface-to-orbit shuttles. Compressors take CO2 from the
   atmosphere, electrolysers split water into hydrogen and oxygen, and a Sabatier reactor

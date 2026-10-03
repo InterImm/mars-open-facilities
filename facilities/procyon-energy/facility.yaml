@@ -9,7 +9,9 @@ lon: 84.624
 lat: 16.181
 operator: IIA (InterImm Agency)
 log_transitions: false
-epoch: "2026-09-01T11:50:00Z"
+epoch: "2219-09-01T11:10:00Z"
+since: 2078
+since_note: "About 2078: the colonies were nuclear-led by 2080."
 summary: >-
   The grid of Procyon City: four heat-pipe fission modules of about 5 MWe each run around the
   clock, and a 12 MWp photovoltaic field adds power by day. Dust in the air cuts the solar

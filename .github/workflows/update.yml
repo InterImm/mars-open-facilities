@@ -34,7 +34,7 @@ jobs:
           path: ~/.cache/homeostat
           key: homeostat-${{ hashFiles('requirements.txt', 'facilities/*/scenario.yaml') }}
           restore-keys: homeostat-
-      - run: python sim/update.py --data /tmp/data --now 2026-09-03T00:00:00Z
+      - run: python sim/update.py --data /tmp/data --now 2219-09-03T00:00:00Z
 
   update:
     if: github.event_name != 'pull_request'

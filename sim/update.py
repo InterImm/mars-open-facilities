@@ -7,6 +7,11 @@ before now. The engine is saved between runs, so the history is one continuous r
 saved engine cannot be used (first run, a changed scenario, other library versions), the
 plant is replayed from its epoch, which gives the same history for the same versions.
 
+The site runs in story time, the present of the InterImm book: real time plus a fixed
+STORY_SHIFT, so 3 October 2026 reads as 3 October 2219, the year terraforming begins. The
+shift is a whole number of days, so story time runs evenly; around leap years the story date
+can be a day behind the real calendar date. Epochs, file names, logs and --now are in story time.
+
 Usage: python sim/update.py [--data DIR] [--now ISO8601]
 """
 
@@ -34,6 +39,7 @@ RECENT_DAYS = 14  # length of recent.csv, the file the dashboard charts
 KEEP_DAYS = 60  # daily raw files kept on the data branch (older months are in releases)
 LOG_KEEP = 300  # operations log entries kept
 LOOKAHEAD = 30 * 86400  # planned work published ahead
+STORY_SHIFT = timedelta(days=70491)  # 2026-10-03 -> 2219-10-03
 
 # Mars Sol Date (Allison and McEwen 2000, as in Mars24); TT - UTC = 69.184 s since 2017
 SOL = 88775.244147
@@ -50,6 +56,10 @@ def msd(ts: pd.Series | datetime) -> float | pd.Series:
 
 def parse_time(s: str) -> datetime:
     return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def story_time(real: datetime) -> datetime:
+    return real + STORY_SHIFT
 
 
 def iso(t: datetime) -> str:
@@ -304,12 +314,14 @@ class Facility:
             "city": self.meta["city"], "city_zh": self.meta.get("city_zh"),
             "region": self.meta["region"], "region_zh": self.meta.get("region_zh"),
             "lat": self.meta["lat"], "lon": self.meta["lon"], "operator": self.meta.get("operator"),
+            "since": self.meta.get("since"),
             "summary": self.meta.get("summary"), "status": status, "mode": regime,
             "time": iso(self.epoch + timedelta(seconds=t - STEP)) if t else None,
             "kpis": kpis,
         }
         write_json(self.out / "meta.json", {
-            **summary, "story": self.meta.get("story"), "book": self.meta.get("book"),
+            **summary, "since_note": self.meta.get("since_note"), "story_shift_s": STORY_SHIFT.total_seconds(),
+            "story": self.meta.get("story"), "book": self.meta.get("book"),
             "process": self.meta.get("process", []), "tags": self.meta["tags"],
             "sources": self.meta.get("sources", []), "epoch": iso(self.epoch),
             "latest": latest, "upcoming": upcoming, "scenario": f"facilities/{self.id}/scenario.yaml",
@@ -336,20 +348,31 @@ class Facility:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=str(ROOT / "data"))
-    ap.add_argument("--now", default=None, help="pretend it is this time (ISO 8601, UTC)")
+    ap.add_argument("--now", default=None, help="pretend it is this story time (ISO 8601, UTC)")
     ap.add_argument("--only", default=None, help="comma-separated facility ids")
     args = ap.parse_args()
-    now = parse_time(args.now) if args.now else datetime.now(timezone.utc)
+    now = parse_time(args.now) if args.now else story_time(datetime.now(timezone.utc))
     data = Path(args.data)
     only = set(args.only.split(",")) if args.only else None
+    folders = sorted(p for p in FACILITIES.iterdir() if (p / "scenario.yaml").exists())
+    epochs = {p.name: yaml.safe_load((p / "facility.yaml").read_text())["epoch"] for p in folders}
+    timeline = {"story_shift_s": STORY_SHIFT.total_seconds(), "epochs": epochs}
+    if data.exists() and any(data.iterdir()) and read_json(data / "timeline.json", {}) != timeline:
+        # data made with another story shift or other epochs does not continue: set it aside
+        old = data.with_name(data.name + ".previous")
+        print(f"The data in {data} is on another timeline; moved to {old}, starting over")
+        data.rename(old)
+    data.mkdir(parents=True, exist_ok=True)
+    write_json(data / "timeline.json", timeline)
     print(f"Advancing facilities to {iso(now)} (homeostat {homeostat.__version__})")
     summaries = []
-    for folder in sorted(p for p in FACILITIES.iterdir() if (p / "scenario.yaml").exists()):
+    for folder in folders:
         if only and folder.name not in only:
             continue
         summaries.append(Facility(folder, data).update(now))
     if not only:
         write_json(data / "index.json", {"generated": iso(now), "msd": round(msd(now), 4),
+                                         "story_shift_s": STORY_SHIFT.total_seconds(),
                                          "homeostat": homeostat.__version__, "facilities": summaries})
 
 

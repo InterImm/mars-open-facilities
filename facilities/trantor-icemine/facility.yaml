@@ -8,7 +8,9 @@ region_zh: 希腊城市圈
 lon: 67.842
 lat: -39.939
 operator: Ava Mars
-epoch: "2026-09-01T00:00:00Z"
+epoch: "2219-09-01T00:00:00Z"
+since: 2159
+since_note: "Trantor, begun in 2155, was finished in 2159."
 summary: >-
   Water from buried glacial ice. Hot water is pumped down Rodriguez wells, melts a pool in the
   ice, and the melt is pumped back up to treatment, where perchlorate is removed.

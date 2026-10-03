@@ -1,9 +1,9 @@
 """Bundle each finished month of 10-minute data into a zip for a GitHub Release.
 
     python sim/archive.py --data data --out _release           # list and zip the months not yet released
-    python sim/archive.py --data data --mark 2026-09            # record a month as released
+    python sim/archive.py --data data --mark 2219-09            # record a month as released
 
-A month is finished once its last UTC day is complete. The zip holds every facility's daily
+A month is finished once its last UTC day is complete, in story time (see update.py). The zip holds every facility's daily
 files for the month (`<id>/YYYY-MM-DD.csv`) and its meta.json. Released months are listed in
 data/releases.json; update.py deletes daily files older than 60 days only once their month
 is released, so nothing is lost.
@@ -16,6 +16,8 @@ import json
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
+
+from update import story_time
 
 README = """Mars Open Facilities, {month}: 10-minute readings of every facility.
 
@@ -73,7 +75,7 @@ def main() -> None:
         if args.mark not in done:
             (data / "releases.json").write_text(json.dumps(sorted(done + [args.mark])) + "\n")
         return
-    for month in finished_months(data, datetime.now(timezone.utc)):
+    for month in finished_months(data, story_time(datetime.now(timezone.utc))):
         if month not in done:
             print(month, bundle(data, month, Path(args.out)))
 
