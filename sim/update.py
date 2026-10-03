@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 FACILITIES = ROOT / "facilities"
 STEP = 600  # published resolution, seconds (the scenarios record every 10 min)
 RECENT_DAYS = 14  # length of recent.csv, the file the dashboard charts
-KEEP_DAYS = 60  # daily raw files kept
+KEEP_DAYS = 60  # daily raw files kept on the data branch (older months are in releases)
 LOG_KEEP = 300  # operations log entries kept
 LOOKAHEAD = 30 * 86400  # planned work published ahead
 
@@ -167,8 +167,10 @@ class Facility:
                     w.writerow(["time", *self.tags])
                 for row in rows.itertuples(index=False):
                     w.writerow([iso(row[0]), *(fmt(v) for v in row[1:])])
+        # a day leaves the branch only once its month is in a GitHub Release (sim/archive.py)
+        released = set(read_json(self.out.parent / "releases.json", []))
         files = sorted(days.glob("*.csv"))
-        for old in files[:-KEEP_DAYS]:
+        for old in [f for f in files[:-KEEP_DAYS] if f.stem[:7] in released]:
             self.archive(old)
             old.unlink()
         self.write_sols()

@@ -22,6 +22,7 @@ Every facility page on the dashboard lists the sources behind its numbers; they 
 facilities/<id>/scenario.yaml   the Homeostat model: loops, instruments, plan, wear, maintenance, faults
 facilities/<id>/facility.yaml   name, city, story, published tags, KPIs and sources
 sim/update.py                   advances every plant to now and writes the data
+sim/archive.py                  zips each finished month for a GitHub Release
 web/                            the dashboard (plain HTML, CSS and JS; charts with uPlot)
 .github/workflows/update.yml    runs sim/update.py hourly, publishes data, deploys Pages
 ```
@@ -40,10 +41,13 @@ The workflow keeps the current data on the `data` branch (one commit, replaced e
 | `index.json` | Every facility's status, mode and KPIs |
 | `<id>/meta.json` | Description, tags, latest values, planned work, sources |
 | `<id>/recent.csv` | The last 14 days, every 10 minutes |
-| `<id>/days/YYYY-MM-DD.csv` | One file per UTC day, the last 60 days |
+| `<id>/days/YYYY-MM-DD.csv` | One file per UTC day, at least the last 60 days |
 | `<id>/sols.csv` | One row per Mars Sol Date over the whole history (means, with `n` rows behind each) |
 | `<id>/log.json` | Operations log: mode changes and maintenance |
 | `<id>/state/` | The saved engine (not published on the site) |
+| `releases.json` | Months already bundled into releases |
+
+Every finished month of 10-minute data is also bundled into a zip and published as a [GitHub Release](https://github.com/InterImm/mars-open-facilities/releases) tagged `data-YYYY-MM` (`sim/archive.py`). Daily files leave the `data` branch only after their month is released, so the full-resolution history is always in one place or the other.
 
 ## Run it locally
 

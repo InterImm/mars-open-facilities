@@ -62,6 +62,20 @@ jobs:
       - name: Advance the facilities
         run: python sim/update.py --data data
 
+      - name: Release finished months
+        # Each finished month of 10-minute data becomes a zipped GitHub Release (data-YYYY-MM).
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python sim/archive.py --data data --out _release | while read -r month zip; do
+            tag="data-$month"
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              gh release create "$tag" "$zip" --target "$GITHUB_SHA" --title "Facility data, $month" \
+                --notes "10-minute readings of every facility for $month (UTC). See README.txt in the zip." </dev/null
+            fi
+            python sim/archive.py --data data --mark "$month" </dev/null
+          done
+
       - name: Publish the data branch
         # One commit, replaced each run: the branch holds the current data and saved engines,
         # not their history, so the repository does not grow.
