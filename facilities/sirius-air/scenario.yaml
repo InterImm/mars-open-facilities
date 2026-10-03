@@ -1,0 +1,123 @@
+# Sirius Air Works (Isidis Planitia): solid-oxide CO2 electrolysis (a scaled-up MOXIE),
+# 2 CO2 -> 2 CO + O2 at about 800 degC, feeding the oxygen supply of Sirius City's domes,
+# plus the dome atmosphere loop that holds the oxygen fraction.
+# Template flows are read as kg/h, temperatures as degC; AIC-303 is the dome O2 fraction in %.
+seed: 303
+duration: 3650d
+dt: 5s
+library: process@1
+
+units:
+  - id: FIC-301
+    template: flow_loop
+    sp: 2300
+    span: [0, 3500]
+    K: 38
+    tau: 20s
+    theta: 2s
+    Kp: 2
+    tuning: simc
+    detune: 2
+    note: "compressed CO2 feed to the stacks, kg/h"
+  - id: TIC-302
+    template: reactor
+    sp: 800
+    span: [0, 1000]
+    K: 7.8
+    tau: 1800s
+    theta: 120s
+    Kd: 0.3
+    base: 0
+    tuning: simc
+    detune: 2
+    q_ref: 0.48
+    t_ref: 800
+    E_R: 3500
+    b: 0
+    volume: 12
+    F_nom: 2300
+    tau_mix: 60s
+    lab_span: [0, 1]
+    lab_period: 10min
+    lab_delay: 2min
+    lab_noise: 0.5
+    note: "SOXE stack furnace; the analysed property is the CO2 utilization (MOXIE ran 30 to 50 %)"
+  - id: AIC-303
+    template: temperature_loop
+    sp: 21.0
+    span: [15, 25]
+    K: 0.08
+    tau: 4h
+    theta: 10min
+    Kd: -0.04
+    tau_d: 2h
+    base: 20.0
+    tuning: simc
+    detune: 2
+    sensor: online_analyzer
+    note: "dome O2 fraction in %, held by the O2 make-up valve; occupancy (feed port) pulls it down"
+
+exogenous:
+  - target: FIC-301.pressure
+    unit: bar
+    source: {kind: ou, mean: 0, std: 10, tau: 1h}
+  - {target: TIC-302.flow, from: FIC-301.cv}
+  - target: TIC-302.feed_temp
+    unit: degC
+    source: {kind: ou, mean: 420, std: 8, tau: 2h}
+    measured: {tag: TT-304, sensor: thermocouple, span: [0, 800]}
+    note: "CO2 preheated against the hot exhaust"
+  - target: AIC-303.feed_temp
+    unit: "%"
+    source: {kind: ou, mean: 50, std: 12, tau: 5h}
+    note: "dome occupancy and activity index, 0 to 100"
+  - target: P_dome
+    unit: kPa
+    source: {kind: ou, mean: 101.3, std: 0.25, tau: 6h}
+    measured: {tag: PT-305, sensor: thermocouple, span: [0, 150]}
+  - target: CO2_dome
+    unit: ppm
+    source: {kind: ou, mean: 780, std: 110, tau: 3h}
+    measured: {tag: AT-306, sensor: online_analyzer, span: [0, 5000]}
+
+custom:
+  - {id: O2.rate, op: product, gain: 0.36364, inputs: {in0: FIC-301.cv, in1: TIC-302.q_product}, unit: kg/h, note: "32/88 kg O2 per kg CO2 electrolysed"}
+  - {id: O2.lag, op: lag, tau: 60s, inputs: {u: O2.rate}}
+  - {id: FT-307, op: white_noise, std: 2.5, inputs: {u: O2.lag}, unit: kg/h}
+  - id: POWER.kw
+    op: sum
+    weights: [9.5, 0.25, 0.6]
+    bias: 180
+    inputs: {in0: O2.rate, in1: FIC-301.cv, in2: TV-302}
+    unit: kW
+    note: "stack electrolysis about 9.5 kWh/kg O2 (scaled MOXIE), CO2 compression 0.25 kWh/kg, furnace heaters 0.6 kW per %"
+  - {id: JI-310, op: white_noise, std: 12, inputs: {u: POWER.kw}, unit: kW}
+
+regimes:
+  full: {FIC-301.sp: 2300}
+  reduced: {FIC-301.sp: 1500}
+
+degradation:
+  - {target: TIC-302, kind: catalyst_decay, rate: 0.0011, t_ref: 800, max: 0.5}
+  - {target: FIC-301, kind: valve_wear, rate: 0.01}
+  - {target: AIC-303, kind: sensor_drift, rate: 0.02}
+
+plan:
+  start: full
+  production:
+    next: {full: {reduced: 1}, reduced: {full: 1}}
+    campaign: {full: {lognormal: {median: 15d, sigma: 0.5}}, reduced: {lognormal: {median: 2d, sigma: 0.5}}}
+    over: 3h
+  maintenance:
+    - {task: replace_catalyst, target: TIC-302, every: 180d, jitter: {normal: {mean: 0, sd: 6d}}, note: "stack replacement"}
+    - {task: calibrate, target: AIC-303, every: 14d}
+    - {task: calibrate, target: FIC-301, every: 45d}
+
+faults:
+  - target: [FIC-301, TIC-302, AIC-303]
+    every: 50d
+    kinds: {sensor_bias: 0.4, sensor_noise: 0.3, valve_stiction: 0.3}
+    after: 7d
+
+output:
+  every: 10min

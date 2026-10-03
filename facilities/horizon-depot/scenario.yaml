@@ -1,0 +1,87 @@
+# Horizon Starport Propellant Depot (Meridiani Planum): the liquid oxygen and liquid methane tank
+# farms that load ships at the starport. Deliveries arrive by pipeline from the plants; when a
+# ship is loading, both levels are drawn down. Template levels are %, flows m3/h of liquid.
+seed: 505
+duration: 3650d
+dt: 10s
+library: process@1
+
+units:
+  - id: LIC-501
+    template: level_loop
+    sp: 85
+    area: 300
+    height: 12
+    Kv: 3.2
+    tau_v: 20s
+    Kc: 3.7
+    Ti: 12h
+    note: "LOX tank farm, 3600 m3 (4100 t at 1141 kg/m3); the outlet feeds the pad transfer pumps"
+  - id: LIC-502
+    template: level_loop
+    sp: 85
+    area: 225
+    height: 12
+    Kv: 2.4
+    tau_v: 20s
+    Kc: 3.7
+    Ti: 12h
+    note: "liquid methane tank farm, 2700 m3 (1140 t at 423 kg/m3), sized for an oxidizer to fuel ratio of 3.6"
+
+exogenous:
+  - target: LIC-501.inflow
+    unit: m3/h
+    source: {kind: ou, mean: 22, std: 3, tau: 6h}
+    measured: {tag: FT-503, sensor: magnetic_flowmeter, span: [0, 60]}
+    note: "LOX arriving by pipeline"
+  - target: LIC-502.inflow
+    unit: m3/h
+    source: {kind: ou, mean: 16, std: 2.5, tau: 6h}
+    measured: {tag: FT-504, sensor: magnetic_flowmeter, span: [0, 60]}
+    note: "LCH4 arriving by pipeline"
+  - target: PT-505.true
+    unit: kPa
+    source: {kind: ou, mean: 135, std: 4, tau: 4h}
+    measured: {tag: PT-505, sensor: radar_level, span: [0, 300]}
+    note: "LOX ullage pressure"
+  - target: PT-506.true
+    unit: kPa
+    source: {kind: ou, mean: 140, std: 4, tau: 4h}
+    measured: {tag: PT-506, sensor: radar_level, span: [0, 300]}
+    note: "LCH4 ullage pressure"
+
+custom:
+  - {id: LOX.t, op: product, n: 1, gain: 41.08, inputs: {in0: LIC-501.cv}, unit: t, note: "inventory: 36 m3 per % at 1.141 t/m3"}
+  - {id: CH4.t, op: product, n: 1, gain: 11.42, inputs: {in0: LIC-502.cv}, unit: t, note: "27 m3 per % at 0.423 t/m3"}
+  - {id: LOX.out_t, op: product, n: 1, gain: 1.141, inputs: {in0: LIC-501.outflow}, unit: t/h}
+  - {id: CH4.out_t, op: product, n: 1, gain: 0.423, inputs: {in0: LIC-502.outflow}, unit: t/h}
+  - {id: FT-507, op: white_noise, std: 0.4, inputs: {u: LOX.out_t}, unit: t/h}
+  - {id: FT-508, op: white_noise, std: 0.15, inputs: {u: CH4.out_t}, unit: t/h}
+  - {id: BOG.lox, op: product, n: 1, gain: 0.00205, inputs: {in0: LOX.t}, unit: t/h, note: "residual boil-off 0.05 %/day with cryocoolers"}
+  - {id: FT-509, op: white_noise, std: 0.0005, inputs: {u: BOG.lox}, unit: t/h}
+
+regimes:
+  storing: {LIC-501.sp: 85, LIC-502.sp: 85}
+  loading: {LIC-501.sp: 22, LIC-502.sp: 22}
+
+degradation:
+  - {target: LIC-501, kind: sensor_drift, rate: 0.01}
+  - {target: LIC-502, kind: sensor_drift, rate: 0.01}
+
+plan:
+  start: storing
+  production:
+    cycle: [storing, loading]
+    campaign: {storing: {lognormal: {median: 9d, sigma: 0.35}}, loading: {uniform: [1.5d, 2.5d]}}
+    over: 30h
+  maintenance:
+    - {task: calibrate, target: [LIC-501, LIC-502], every: 60d}
+
+faults:
+  - target: [LIC-501, LIC-502]
+    every: 90d
+    kinds: {sensor_bias: 0.5, sensor_noise: 0.5}
+    after: 10d
+
+output:
+  every: 10min

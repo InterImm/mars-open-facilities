@@ -1,0 +1,136 @@
+# Procyon Propellant Works (Isidis Planitia): CO2 from the atmosphere plus hydrogen from water
+# electrolysis make methane and oxygen by the Sabatier reaction, CO2 + 4 H2 -> CH4 + 2 H2O.
+# Template flows are read as kg/h and temperatures as degC.
+seed: 101
+duration: 3650d
+dt: 5s
+library: process@1
+
+units:
+  - id: FIC-101
+    template: flow_loop
+    sp: 690
+    span: [0, 1000]
+    K: 11.5
+    tau: 20s
+    theta: 2s
+    Kp: 0.6
+    tuning: simc
+    detune: 2
+    note: "CO2 feed from the atmospheric acquisition compressors, kg/h (2.75 kg CO2 per kg CH4)"
+  - id: FIC-102
+    template: flow_loop
+    sp: 125.4
+    mode: CAS
+    span: [0, 250]
+    K: 2.1
+    tau: 15s
+    theta: 2s
+    Kp: 0.1
+    tuning: simc
+    detune: 2
+    note: "H2 feed from the electrolysers, ratio-controlled to the CO2 feed (4 mol H2 per mol CO2 = 0.1818 kg/kg)"
+  - id: TIC-103
+    template: reactor
+    sp: 330
+    span: [0, 600]
+    K: 5.5
+    tau: 900s
+    theta: 60s
+    Kd: 0.5
+    base: 0
+    tuning: simc
+    detune: 1.5
+    q_ref: 0.955
+    t_ref: 330
+    E_R: 400
+    b: 0.4
+    volume: 4
+    F_nom: 690
+    tau_mix: 120s
+    lab_span: [0, 1]
+    lab_period: 15min
+    lab_delay: 6min
+    lab_noise: 0.4
+    note: "Sabatier reactor on a Ru/Al2O3 catalyst; the analysed property is the single-pass CO2 conversion"
+
+exogenous:
+  - target: P_amb
+    unit: Pa
+    source: {kind: ou, mean: 860, std: 35, tau: 20h}
+    measured: {tag: PT-100, sensor: thermocouple, span: [0, 1500]}
+    note: "surface pressure at Isidis (about -3.8 km), 610 Pa datum scaled by exp(3.8/11)"
+  - target: FIC-101.pressure
+    unit: bar
+    source: {kind: ou, mean: 0, std: 8, tau: 2h}
+    note: "compressor discharge deviation seen by the CO2 control valve"
+  - target: FIC-102.pressure
+    unit: bar
+    source: {kind: ou, mean: 0, std: 5, tau: 30min}
+  - {target: FIC-102.rsp, from: FFC-102.out}
+  - {target: TIC-103.flow, from: FIC-101.cv}
+  - {target: TIC-103.ratio, from: RX-103.ratio}
+  - target: TIC-103.feed_temp
+    unit: degC
+    source: {kind: ou, mean: 180, std: 6, tau: 3h}
+    measured: {tag: TT-104, sensor: thermocouple, span: [0, 400]}
+    note: "feed preheated against the reactor effluent"
+
+custom:
+  - {id: FFC-102.ratio, op: schedule, value: 0.1818, unit: "1"}
+  - {id: FFC-102.out, op: product, inputs: {in0: FT-101, in1: FFC-102.ratio}, unit: kg/h}
+  - id: RX-103.ratio
+    op: log_linear
+    weights: [1, -1]
+    transforms: [log, log]
+    bias: 1.7048
+    inputs: {in0: FIC-102.cv, in1: FIC-101.cv}
+    unit: "1"
+    note: "H2:CO2 feed ratio relative to stoichiometric (ln(1/0.1818) = 1.7048)"
+  - {id: CH4.rate, op: product, inputs: {in0: FIC-101.cv, in1: TIC-103.q_product}, gain: 0.36364, unit: kg/h, note: "16/44 kg CH4 per kg CO2 converted"}
+  - {id: CH4.lag, op: lag, tau: 60s, inputs: {u: CH4.rate}}
+  - {id: FT-105, op: white_noise, std: 1.2, inputs: {u: CH4.lag}, unit: kg/h}
+  - {id: O2.rate, op: product, inputs: {in0: CH4.rate}, n: 1, gain: 4.0, unit: kg/h, note: "net CO2 + 2 H2O -> CH4 + 2 O2: 4 kg O2 per kg CH4"}
+  - {id: O2.lag, op: lag, tau: 60s, inputs: {u: O2.rate}}
+  - {id: FT-106, op: white_noise, std: 4, inputs: {u: O2.lag}, unit: kg/h}
+  - id: POWER.kw
+    op: sum
+    weights: [53, 0.45, 2.2]
+    bias: 350
+    inputs: {in0: FIC-102.cv, in1: FIC-101.cv, in2: CH4.rate}
+    unit: kW
+    note: "electrolysis 53 kWh/kg H2; CO2 compression 0.45 kWh/kg; liquefaction 2.2 kWh/kg CH4 (O2 included); 350 kW auxiliaries"
+  - {id: JI-110, op: white_noise, std: 15, inputs: {u: POWER.kw}, unit: kW}
+
+regimes:
+  full: {FIC-101.sp: 690}
+  curtailed: {FIC-101.sp: 450}
+  minimum: {FIC-101.sp: 300}
+
+degradation:
+  - {target: TIC-103, kind: catalyst_decay, rate: 0.0015, t_ref: 330, max: 0.6}
+  - {target: TIC-103, kind: fouling, rate: 0.0015, t_ref: 330}
+  - {target: FIC-101, kind: valve_wear, rate: 0.01}
+  - {target: FIC-101, kind: sensor_drift, rate: 0.01}
+  - {target: FIC-102, kind: sensor_drift, rate: 0.01}
+
+plan:
+  start: full
+  production:
+    next: {full: {curtailed: 0.8, minimum: 0.2}, curtailed: {full: 1}, minimum: {full: 0.6, curtailed: 0.4}}
+    campaign: {full: {lognormal: {median: 12d, sigma: 0.5}}, curtailed: {lognormal: {median: 2d, sigma: 0.6}}, minimum: {lognormal: {median: 1d, sigma: 0.5}}}
+    over: 2h
+  maintenance:
+    - {task: replace_catalyst, target: TIC-103, every: 92d, jitter: {normal: {mean: 0, sd: 4d}}}
+    - {task: clean, target: TIC-103, every: 61d, jitter: {normal: {mean: 0, sd: 3d}}}
+    - {task: calibrate, target: [FIC-101, FIC-102], every: 30d, jitter: {uniform: [-2d, 2d]}}
+    - {task: replace_valve, target: FIC-101, every: 365d}
+
+faults:
+  - target: [FIC-101, FIC-102, TIC-103]
+    every: 45d
+    kinds: {sensor_bias: 0.4, sensor_noise: 0.3, valve_stiction: 0.3}
+    after: 5d
+
+output:
+  every: 10min

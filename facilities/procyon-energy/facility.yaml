@@ -1,0 +1,48 @@
+id: procyon-energy
+name: Procyon Energy Station
+name_zh: 南河城能源站
+city: Procyon City
+city_zh: 南河城
+region: Isidis Metropolitan Area
+region_zh: 伊希地城市圈
+lon: 84.624
+lat: 16.181
+operator: IIA (InterImm Agency)
+log_transitions: false
+epoch: "2026-09-01T11:50:00Z"
+summary: >-
+  The grid of Procyon City: four heat-pipe fission modules of about 5 MWe each run around the
+  clock, and a 12 MWp photovoltaic field adds power by day. Dust in the air cuts the solar
+  output, most of all in a dust storm.
+story: >-
+  Dust storms in spring and autumn hurt the early solar plants, so IIA built wind and nuclear
+  stations. By 2080 the colonies ran on nuclear power, with wind and solar in support.
+book: https://book.interimm.org/history/mars_immigration/
+process:
+  - "Four heat-pipe microreactors (about 15 MWt each) with closed Brayton converters, 34 % efficient"
+  - "Control drums hold the core outlet at 650 degC; each module is refuelled and inspected about every 300 days"
+  - "12 MWp photovoltaic field; output follows the sol and the dust optical depth"
+kpis:
+  - {tag: JI-210, label: Total generation, unit: MW, design: 24, note: "design is the sol average: 19.6 MW fission plus about 4 MW solar"}
+  - {tag: JI-205, label: Solar output, unit: MW, design: 4, note: "design is the sol average of a 12 MWp field in clear weather"}
+  - {tag: JI-211, label: City demand, unit: MW, design: 24, kind: input}
+tags:
+  - {tag: JI-201, label: Module A output, unit: MW, group: Fission}
+  - {tag: JI-202, label: Module B output, unit: MW, group: Fission}
+  - {tag: JI-203, label: Module C output, unit: MW, group: Fission}
+  - {tag: JI-204, label: Module D output, unit: MW, group: Fission}
+  - {tag: TT-201, label: Module A core outlet, unit: degC, group: Fission}
+  - {tag: TT-202, label: Module B core outlet, unit: degC, group: Fission}
+  - {tag: TT-203, label: Module C core outlet, unit: degC, group: Fission}
+  - {tag: TT-204, label: Module D core outlet, unit: degC, group: Fission}
+  - {tag: JI-205, label: Solar field output, unit: MW, group: Solar}
+  - {tag: AT-205, label: Dust optical depth, unit: tau, group: Solar}
+  - {tag: JI-210, label: Total generation, unit: MW, group: Grid}
+  - {tag: JI-211, label: City demand, unit: MW, group: Grid}
+  - {tag: TT-200, label: Air temperature, unit: degC, group: Site}
+sources:
+  - {label: "Kilopower Project: the KRUSTY fission power experiment and potential missions (NASA)", url: "https://ntrs.nasa.gov/citations/20205008482"}
+  - {label: "NASA Fission Surface Power project", url: "https://www.nasa.gov/space-technology-mission-directorate/tdm/fission-surface-power/"}
+  - {label: "Appelbaum and Flood, Solar radiation on Mars (NASA TM-102299, 1989)", url: "https://ntrs.nasa.gov/citations/19890018252"}
+  - {label: "Lemmon et al. 2015, Dust aerosol optical depth over the MER rover sites (Icarus 251)", url: "https://doi.org/10.1016/j.icarus.2014.03.029"}
+  - {label: "Curiosity REMS weather data (NASA Planetary Data System)", url: "https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/curiosity/rems.html"}

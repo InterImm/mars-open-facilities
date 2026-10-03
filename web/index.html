@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en" class="js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Mars Open Facilities | InterImm</title>
+<meta name="description" content="Live production status of the key facilities of the Mars colonies: propellant, power, air, iron, water and food. Simulated with Homeostat from published engineering numbers, updated by GitHub Actions.">
+<link rel="icon" href="https://interimm.org/assets/img/favicon.ico">
+<link rel="stylesheet" href="https://interimm.org/kit/interimm.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.32/dist/uPlot.min.css">
+<link rel="stylesheet" href="css/style.css?v=1">
+<script src="https://interimm.org/kit/interimm.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.32/dist/uPlot.iife.min.js" defer></script>
+<script type="module" src="js/app.js?v=1"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" data-interimm-header data-lang="en">
+  <div class="wrap header-inner">
+    <a class="brand" href="https://interimm.org/en/"><span class="brand-name">InterImm</span></a>
+  </div>
+</header>
+
+<main id="main">
+  <header class="page-hero space">
+    <div class="wrap">
+      <p class="kicker"><span class="pulse"></span>Open facilities · 开放设施</p>
+      <h1 id="title">Mars Open Facilities</h1>
+      <p class="lede" id="lede">The key facilities of the Mars colonies, live: propellant, power, air, iron, water and food. Every number comes from a running plant model sized from published engineering data.</p>
+      <dl class="clockbar">
+        <div><dt>Earth (UTC)</dt><dd id="clock-utc">–</dd></div>
+        <div><dt>Mars Sol Date</dt><dd id="clock-msd">–</dd></div>
+        <div><dt>InterImm date</dt><dd id="clock-ii">–</dd></div>
+        <div><dt>Data as of</dt><dd id="clock-data">–</dd></div>
+      </dl>
+    </div>
+  </header>
+
+  <div id="view"></div>
+</main>
+
+<template id="tpl-overview">
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head section-head-split">
+        <div>
+          <h2 class="section-title">Facilities</h2>
+          <p class="section-lede">Production of the last 14 days. Open a facility for its instruments, operations log and sources.</p>
+        </div>
+        <div class="totals" id="totals"></div>
+      </div>
+      <div class="facility-grid" id="cards"></div>
+    </div>
+  </section>
+  <section class="section section-alt">
+    <div class="wrap map-wrap">
+      <div>
+        <h2 class="section-title">Where they are</h2>
+        <p class="section-lede">Four metropolitan areas, eleven cities by 2200 in the <a href="https://book.interimm.org/history/mars_immigration/">InterImm book</a>. The facilities sit in six of them.</p>
+      </div>
+      <figure class="map" id="map"></figure>
+    </div>
+  </section>
+  <section class="section">
+    <div class="wrap prose">
+      <h2>How it works</h2>
+      <p>Each facility is a process model written for <a href="https://homeostat.kausalflow.com/docs/">Homeostat</a>: control loops, instruments with noise, lag and drift, a production plan, wear, maintenance and random faults. The sizes and yields come from real engineering: Sabatier stoichiometry, electrolysis at about 53 kWh per kilogram of hydrogen, MOXIE, HYBRIT, the South Pole Rodwell, NASA crop chambers. Every facility page lists its sources.</p>
+      <p>The plants run on a clock: a GitHub Actions workflow advances each one to the present every hour and publishes the readings as plain CSV and JSON. Nothing runs on a server. The history is deterministic, so anyone can rerun a facility from its scenario file and get the same numbers.</p>
+      <p><a class="text-link" href="https://github.com/InterImm/mars-open-facilities">Source and data on GitHub <span>→</span></a></p>
+    </div>
+  </section>
+</template>
+
+<template id="tpl-facility">
+  <section class="section facility-head">
+    <div class="wrap">
+      <p class="crumbs"><a href="#/">All facilities</a></p>
+      <div class="facility-title">
+        <div>
+          <p class="kicker" data-f="region"></p>
+          <h2 class="section-title" data-f="name"></h2>
+          <p class="muted" data-f="where"></p>
+        </div>
+        <div class="status-block">
+          <span class="status" data-f="status"></span>
+          <span class="mode" data-f="mode"></span>
+        </div>
+      </div>
+      <p class="section-lede" data-f="summary"></p>
+      <div class="kpi-row" data-f="kpis"></div>
+    </div>
+  </section>
+  <section class="section section-alt">
+    <div class="wrap">
+      <div class="section-head section-head-split">
+        <h2 class="section-title">Instruments</h2>
+        <div class="range" role="group" aria-label="Time range">
+          <button class="btn btn-ghost" data-range="1">1 sol</button>
+          <button class="btn btn-ghost" data-range="3">3 sols</button>
+          <button class="btn btn-ghost" data-range="14">14 days</button>
+          <button class="btn btn-ghost" data-range="all">All (sol means)</button>
+        </div>
+      </div>
+      <div class="charts" data-f="charts"></div>
+    </div>
+  </section>
+  <section class="section">
+    <div class="wrap facility-cols">
+      <div>
+        <h2 class="h3">Process</h2>
+        <ul data-f="process"></ul>
+        <h2 class="h3">History</h2>
+        <p data-f="story"></p>
+        <p><a class="text-link" data-f="book">Read it in the InterImm book <span>→</span></a></p>
+        <h2 class="h3">Sources</h2>
+        <ul class="sources" data-f="sources"></ul>
+      </div>
+      <div>
+        <h2 class="h3">Planned work, next 30 days</h2>
+        <ul class="log" data-f="upcoming"></ul>
+        <h2 class="h3">Operations log</h2>
+        <ul class="log" data-f="log"></ul>
+        <h2 class="h3">Data</h2>
+        <ul class="downloads" data-f="downloads"></ul>
+      </div>
+    </div>
+  </section>
+</template>
+
+<footer class="site-footer" data-interimm-footer>
+  <div class="wrap"><p class="footer-legal"><span>InterImm · Interplanetary Immigration Center</span></p></div>
+</footer>
+</body>
+</html>

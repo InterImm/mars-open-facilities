@@ -1,0 +1,106 @@
+# Trantor Ice Mine (Hellas Planitia): Ava Mars's Rodriguez wells melt buried glacial ice with
+# hot water, as the Rodwell at the South Pole station does, and pump the melt pool to treatment.
+# Template flows are m3/h, temperatures degC, the pool level %.
+seed: 606
+duration: 3650d
+dt: 10s
+library: process@1
+
+units:
+  - id: TIC-601
+    template: heat_exchanger
+    sp: 85
+    span: [0, 150]
+    K: 1.6
+    tau: 600s
+    theta: 30s
+    F_nom: 30
+    tuning: simc
+    detune: 2
+    note: "hot-water supply to the well heads, heated by reactor waste heat"
+  - id: FIC-602
+    template: flow_loop
+    sp: 30
+    span: [0, 60]
+    K: 0.5
+    tau: 30s
+    theta: 5s
+    Kp: 0.5
+    tuning: simc
+    detune: 2
+    note: "hot water injected down the well, m3/h"
+  - id: LIC-603
+    template: level_loop
+    sp: 50
+    area: 180
+    height: 6
+    Kv: 0.6
+    tau_v: 10s
+    Kc: 12
+    Ti: 6h
+    note: "melt pool in the ice cavity, % of 6 m; the outlet is the production pump"
+
+exogenous:
+  - {target: TIC-601.flow, from: FIC-602.cv}
+  - target: TIC-601.inlet_temp
+    unit: degC
+    source: {kind: ou, mean: 8, std: 1.5, tau: 6h}
+    measured: {tag: TT-604, sensor: thermocouple, span: [-20, 50]}
+    note: "return water from the well"
+  - target: FIC-602.pressure
+    unit: bar
+    source: {kind: ou, mean: 0, std: 1.5, tau: 2h}
+  - {target: LIC-603.inflow, from: MELT.pool}
+  - target: ICE.dirt
+    unit: "1"
+    source: {kind: ou, mean: 1.0, std: 0.06, tau: 3d}
+    note: "the ice carries dust and debris, which slow melting where it is dirtier"
+  - target: AT-605.true
+    unit: mg/L
+    source: {kind: ou, mean: 380, std: 60, tau: 4d}
+    measured: {tag: AT-605, sensor: lab, span: [0, 2000]}
+    note: "perchlorate in the raw melt (Mars soils hold 0.4 to 0.6 wt%, Phoenix WCL), removed downstream"
+
+custom:
+  - {id: DT.raw, op: sum, weights: [1, -1], inputs: {in0: TIC-601.cv, in1: TT-604}, unit: degC}
+  - {id: DT.well, op: saturation, lo: 0, inputs: {u: DT.raw}, unit: degC}
+  - id: MELT.rate
+    op: product
+    n: 3
+    gain: 0.00889
+    inputs: {in0: FIC-602.cv, in1: DT.well, in2: ICE.dirt}
+    unit: m3/h
+    note: "heat 4.18 kJ/kg/K x flow x dT melts ice at about 470 kJ/kg (334 latent + warming from -55 degC)"
+  - {id: MELT.pool, op: first_order, K: 1, tau: 8h, inputs: {u: MELT.rate}, unit: m3/h, note: "melt reaches the pool hours after the heat"}
+  - {id: FT-606, op: white_noise, std: 0.2, inputs: {u: LIC-603.outflow}, unit: m3/h}
+  - {id: HEAT.mw, op: product, gain: 0.001161, inputs: {in0: FIC-602.cv, in1: DT.well}, unit: MW}
+  - {id: JI-607, op: white_noise, std: 0.02, inputs: {u: HEAT.mw}, unit: MW}
+
+regimes:
+  full: {FIC-602.sp: 30}
+  reduced: {FIC-602.sp: 20}
+
+degradation:
+  - {target: TIC-601, kind: fouling, rate: 0.003, t_ref: 85}
+  - {target: FIC-602, kind: valve_wear, rate: 0.02}
+  - {target: LIC-603, kind: sensor_drift, rate: 0.02}
+
+plan:
+  start: full
+  production:
+    next: {full: {reduced: 1}, reduced: {full: 1}}
+    campaign: {full: {lognormal: {median: 20d, sigma: 0.5}}, reduced: {lognormal: {median: 4d, sigma: 0.5}}}
+    over: 4h
+  maintenance:
+    - {task: clean, target: TIC-601, every: 60d}
+    - {task: calibrate, target: LIC-603, every: 30d}
+    - {task: stop, target: [FIC-602, TIC-601], duration: 2d, every: 120d, first: 50d, note: "redrill: the heater string is lowered as the cavity deepens"}
+
+faults:
+  - target: [TIC-601, FIC-602, LIC-603]
+    every: 50d
+    kinds: {sensor_bias: 0.4, sensor_noise: 0.3, valve_stiction: 0.3}
+    after: 5d
+
+output:
+  every: 10min

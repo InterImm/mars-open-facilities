@@ -1,0 +1,42 @@
+id: horizon-depot
+name: Horizon Starport Propellant Depot
+name_zh: 视界星港推进剂库
+city: Horizon City
+city_zh: 视界城
+region: Meridiani Metropolitan Area
+region_zh: 子午线城市圈
+lon: 10.541
+lat: 5.467
+operator: MREI (Mars Real Estate Industry)
+epoch: "2026-09-01T00:00:00Z"
+summary: >-
+  The cryogenic tank farms of the largest starport on Mars. Liquid oxygen and liquid methane
+  arrive by pipeline and are drawn down when a ship loads: about 2,600 t of LOX and 730 t of
+  methane per ship.
+story: >-
+  Horizon City was built from 2148, with the Martian space elevator going up beside it.
+  Horizon Starport, finished in 2153, became the largest starport on Mars, where most cargo
+  changes hands.
+book: https://book.interimm.org/history/mars_immigration/
+process:
+  - "LOX tank farm, 3,600 m3 (4,100 t); liquid methane tank farm, 2,700 m3 (1,140 t)"
+  - "Zero-boil-off cryocoolers; residual boil-off about 0.05 % per day"
+  - "Ship loading draws both farms down from 85 % to about 22 % over 30 hours"
+kpis:
+  - {tag: LT-501, label: LOX inventory, unit: "%", design: 85, kind: level}
+  - {tag: LT-502, label: Methane inventory, unit: "%", design: 85, kind: level}
+  - {tag: FT-507, label: LOX dispatched, unit: t/h, design: 25}
+tags:
+  - {tag: LT-501, label: LOX tank level, unit: "%", group: Liquid oxygen}
+  - {tag: FT-503, label: LOX receipts, unit: m3/h, group: Liquid oxygen}
+  - {tag: FT-507, label: LOX dispatched, unit: t/h, group: Liquid oxygen}
+  - {tag: PT-505, label: LOX ullage pressure, unit: kPa, group: Liquid oxygen}
+  - {tag: FT-509, label: LOX boil-off, unit: t/h, group: Liquid oxygen}
+  - {tag: LT-502, label: Methane tank level, unit: "%", group: Liquid methane}
+  - {tag: FT-504, label: Methane receipts, unit: m3/h, group: Liquid methane}
+  - {tag: FT-508, label: Methane dispatched, unit: t/h, group: Liquid methane}
+  - {tag: PT-506, label: Methane ullage pressure, unit: kPa, group: Liquid methane}
+sources:
+  - {label: "SpaceX Starship: about 1,200 t of propellant at an O/F ratio near 3.6", url: "https://www.spacex.com/vehicles/starship/"}
+  - {label: "Plachta and Kittel 2003, An updated zero boil-off cryogenic propellant storage analysis for upper stages or depots (NASA)", url: "https://ntrs.nasa.gov/citations/20030067928"}
+  - {label: "Densities of liquid oxygen and methane (NIST Chemistry WebBook)", url: "https://webbook.nist.gov/chemistry/fluid/"}

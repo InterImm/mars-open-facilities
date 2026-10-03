@@ -1,0 +1,41 @@
+id: trantor-icemine
+name: Trantor Ice Mine
+name_zh: 川陀城冰矿
+city: Trantor City
+city_zh: 川陀城
+region: Hellas Metropolitan Area
+region_zh: 希腊城市圈
+lon: 67.842
+lat: -39.939
+operator: Ava Mars
+epoch: "2026-09-01T00:00:00Z"
+summary: >-
+  Water from buried glacial ice. Hot water is pumped down Rodriguez wells, melts a pool in the
+  ice, and the melt is pumped back up to treatment, where perchlorate is removed.
+story: >-
+  Hellas is rich in minerals, and its water far exceeds other low-latitude regions. The mining
+  company Ava Mars grew its outpost into a base and proposed the open Trantor City plan,
+  built from 2155.
+book: https://book.interimm.org/history/mars_immigration/
+process:
+  - "Hot-water supply at 85 degC from reactor waste heat"
+  - "Rodriguez well: 30 m3/h of hot water melts about 21 m3/h of ice (334 kJ/kg latent heat plus warming from -55 degC)"
+  - "Melt pool level control and production pumps; the heater string is lowered every 120 days"
+  - "Perchlorate in the raw melt, measured by the lab"
+kpis:
+  - {tag: FT-606, label: Water, unit: m3/h, design: 21}
+  - {tag: JI-607, label: Heat input, unit: MW, design: 2.8, kind: input}
+  - {tag: AT-605, label: Perchlorate, unit: mg/L, design: 400, kind: level}
+tags:
+  - {tag: TT-601, label: Hot-water supply temperature, unit: degC, group: Heating}
+  - {tag: TT-604, label: Return water temperature, unit: degC, group: Heating}
+  - {tag: FT-602, label: Hot-water injection, unit: m3/h, group: Heating}
+  - {tag: JI-607, label: Heat delivered to the ice, unit: MW, group: Heating}
+  - {tag: LT-603, label: Melt pool level, unit: "%", group: Well}
+  - {tag: FT-606, label: Water production, unit: m3/h, group: Well}
+  - {tag: AT-605, label: Perchlorate in raw melt (lab), unit: mg/L, group: Water quality}
+sources:
+  - {label: "Lunardini and Rand 1995, Thermal design of an Antarctic water well (CRREL Special Report 95-10)", url: "https://icedrill.org/library/thermal-design-antarctic-water-well"}
+  - {label: "Mars Rodwell Experiment final report (NASA/TP-20205011353)", url: "https://ntrs.nasa.gov/citations/20205011353"}
+  - {label: "Holt et al. 2008, Radar evidence for ice in lobate debris aprons near Hellas, Science 322", url: "https://doi.org/10.1126/science.1164246"}
+  - {label: "Hecht et al. 2009, Perchlorate at the Phoenix landing site, Science 325", url: "https://doi.org/10.1126/science.1172466"}

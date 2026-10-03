@@ -1,0 +1,90 @@
+# Advances every facility to the present, publishes the new data on the `data` branch and
+# deploys the dashboard with that data to GitHub Pages. Free on a public repository.
+name: Update facilities
+
+on:
+  schedule:
+    - cron: "7 * * * *" # every hour
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('check-{0}', github.ref) || 'update' }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    # On a pull request: run every facility for its first two days, to catch a broken scenario.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/homeostat
+          key: homeostat-${{ hashFiles('requirements.txt', 'facilities/*/scenario.yaml') }}
+          restore-keys: homeostat-
+      - run: python sim/update.py --data /tmp/data --now 2026-09-03T00:00:00Z
+
+  update:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the published data
+        env:
+          REPO: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}
+        run: git clone --quiet --depth 1 --branch data "$REPO" data || mkdir -p data
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/homeostat
+          key: homeostat-${{ hashFiles('requirements.txt', 'facilities/*/scenario.yaml') }}
+          restore-keys: homeostat-
+
+      - name: Advance the facilities
+        run: python sim/update.py --data data
+
+      - name: Publish the data branch
+        # One commit, replaced each run: the branch holds the current data and saved engines,
+        # not their history, so the repository does not grow.
+        env:
+          REPO: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}
+        run: |
+          cd data
+          rm -rf .git
+          git init --quiet --initial-branch data
+          git add --all
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Facility data as of $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push --quiet --force "$REPO" data
+
+      - name: Build the site
+        run: |
+          mkdir -p _site/data
+          cp -r web/. _site/
+          tar -C data --exclude=./state --exclude='./*/state' --exclude=./.git -cf - . | tar -C _site/data -xf -
+          sed -i "s/?v=1/?v=${GITHUB_SHA::7}/g" _site/index.html
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
+      - id: deploy
+        uses: actions/deploy-pages@v4
