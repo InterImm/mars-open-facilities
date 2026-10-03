@@ -61,9 +61,12 @@ const scaled = (t, v) => (v == null ? v : v * (t.scale || 1));
 const utc = (ms) => new Date(ms).toISOString().slice(0, 16).replace('T', ' ');
 
 // --- the clock bar -------------------------------------------------------------------
+// The site runs in story time: real time plus a fixed shift from the data (2026 reads as 2219).
 let dataTime = null;
+let shift = null;
 function tickClock() {
-  const now = Date.now();
+  if (shift == null) return;
+  const now = Date.now() + shift;
   $('#clock-utc').textContent = `${utc(now)}`;
   $('#clock-msd').textContent = msdOf(now).toFixed(4);
   if (mt) {
@@ -81,6 +84,7 @@ setInterval(tickClock, 1000);
 async function overview(view) {
   view.replaceChildren($('#tpl-overview').content.cloneNode(true));
   const index = await get('index.json');
+  shift = (index.story_shift_s || 0) * 1000;
   dataTime = Math.max(...index.facilities.map((f) => Date.parse(f.time) || 0));
   tickClock();
   const cards = $('#cards', view);
@@ -109,7 +113,7 @@ function kpiTile(k, big = false) {
 function card(f) {
   const c = el('article', { class: 'card card-link-wrap facility-card', id: `card-${f.id}` },
     el('div', { class: 'card-top' },
-      el('p', { class: 'card-where', text: `${f.city} · ${f.region.replace(' Metropolitan Area', '')}` }),
+      el('p', { class: 'card-where', text: `${f.city} · ${f.region.replace(' Metropolitan Area', '')}${f.since ? ` · since ${f.since}` : ''}` }),
       statusPill(f.status)),
     el('h3', { class: 'card-title' }, el('a', { class: 'card-link', href: `#/${f.id}`, text: f.name })),
     el('p', { class: 'card-zh', lang: 'zh', text: f.name_zh }),
@@ -180,18 +184,19 @@ async function facility(view, id) {
   const [meta, log, recentText] = await Promise.all([
     get(`${id}/meta.json`), get(`${id}/log.json`).catch(() => []), get(`${id}/recent.csv`, 'text'),
   ]);
+  shift = (meta.story_shift_s || 0) * 1000;
   dataTime = Date.parse(meta.time); tickClock();
   document.title = `${meta.name} | Mars Open Facilities`;
   const f = (k) => $(`[data-f="${k}"]`, view);
   f('region').textContent = `${meta.region} · ${meta.region_zh || ''}`;
   f('name').textContent = meta.name;
-  f('where').textContent = `${meta.name_zh} · ${meta.city} (${meta.city_zh}) · ${Math.abs(meta.lat).toFixed(1)}°${meta.lat >= 0 ? 'N' : 'S'} ${((meta.lon + 360) % 360).toFixed(1)}°E · operated by ${meta.operator}`;
+  f('where').textContent = `${meta.name_zh} · ${meta.city} (${meta.city_zh}) · ${Math.abs(meta.lat).toFixed(1)}°${meta.lat >= 0 ? 'N' : 'S'} ${((meta.lon + 360) % 360).toFixed(1)}°E · operated by ${meta.operator}${meta.since ? ` · in service since ${meta.since}` : ''}`;
   f('status').replaceWith(statusPill(meta.status));
   f('mode').textContent = meta.mode ? `Mode: ${meta.mode.replace(/_/g, ' ')}` : '';
   f('summary').textContent = meta.summary;
   f('kpis').append(...meta.kpis.map((k) => kpiTile(k, true)));
   f('process').append(...meta.process.map((p) => el('li', { text: p })));
-  f('story').textContent = meta.story;
+  f('story').textContent = meta.since_note ? `${meta.story} ${meta.since_note}` : meta.story;
   f('book').href = meta.book;
   f('sources').append(...meta.sources.map((s) => el('li', {}, el('a', { href: s.url, text: s.label }))));
   const when = (t) => `${utc(Date.parse(t))} UTC · sol ${Math.floor(msdOf(Date.parse(t)))}`;

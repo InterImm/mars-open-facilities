@@ -8,7 +8,9 @@ region_zh: 伊希地城市圈
 lon: 86.578
 lat: 7.439
 operator: IIA (InterImm Agency)
-epoch: "2026-09-01T00:00:00Z"
+epoch: "2219-09-01T00:00:00Z"
+since: 2115
+since_note: "About 2115: Sirius was built as the Isidis circle formed in the 2120s."
 summary: >-
   Breathing oxygen for the domes of Sirius City. Solid-oxide stacks, a scaled-up MOXIE, split
   atmospheric CO2 at 800 degC into oxygen and carbon monoxide. The dome atmosphere loop

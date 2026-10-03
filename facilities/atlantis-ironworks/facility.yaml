@@ -8,7 +8,9 @@ region_zh: 亚马逊城市圈
 lon: -169.397
 lat: 5.496
 operator: Atlantis machinery consortium
-epoch: "2026-09-01T00:00:00Z"
+epoch: "2219-09-01T00:00:00Z"
+since: 2150
+since_note: "About 2150: the Amazonis circle formed in the 2150s."
 summary: >-
   Iron and steel for Martian machinery. Hematite pellets are reduced with hydrogen in a shaft
   furnace at 900 degC, without coal or coke, and the sponge iron is melted to steel in an
