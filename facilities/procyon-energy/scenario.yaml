@@ -1,0 +1,96 @@
+# Procyon Energy Station (Isidis Planitia): four heat-pipe fission modules of about 5 MWe each
+# (the nuclear core of the grid since 2080) and a 12 MWp photovoltaic field that follows the sol.
+# The run starts at local sunrise; the production plan alternates day and night every half sol.
+# Template temperatures are degC; the custom signals are in MW.
+seed: 202
+duration: 3650d
+dt: 30s
+library: process@1
+
+units:
+  - {id: TIC-201, template: temperature_loop, sp: 650, span: [0, 900], K: 9, tau: 1200s, theta: 60s, Kd: 0.2, tau_d: 3h, base: 0, tuning: simc, detune: 2, note: "module A core outlet temperature, held by the control drums (valve = drum position)"}
+  - {id: TIC-202, template: temperature_loop, sp: 650, span: [0, 900], K: 9, tau: 1200s, theta: 60s, Kd: 0.2, tau_d: 3h, base: 0, tuning: simc, detune: 2, note: "module B"}
+  - {id: TIC-203, template: temperature_loop, sp: 650, span: [0, 900], K: 9, tau: 1200s, theta: 60s, Kd: 0.2, tau_d: 3h, base: 0, tuning: simc, detune: 2, note: "module C"}
+  - {id: TIC-204, template: temperature_loop, sp: 650, span: [0, 900], K: 9, tau: 1200s, theta: 60s, Kd: 0.2, tau_d: 3h, base: 0, tuning: simc, detune: 2, note: "module D"}
+
+exogenous:
+  - target: T_amb.weather
+    unit: degC
+    source: {kind: ou, mean: -88, std: 7, tau: 2d}
+    note: "pre-dawn air temperature at Isidis, varying with the weather and dust"
+  - {target: TIC-201.feed_temp, from: T_amb}
+  - {target: TIC-202.feed_temp, from: T_amb}
+  - {target: TIC-203.feed_temp, from: T_amb}
+  - {target: TIC-204.feed_temp, from: T_amb}
+  - target: TAU.base
+    unit: "1"
+    source: {kind: ou, mean: 0.55, std: 0.18, tau: 4d}
+    note: "column dust optical depth, typical clear-season values 0.3 to 0.9 (MER Pancam record)"
+  - target: TAU.storm
+    unit: "1"
+    source: {kind: ou, mean: 0, std: 1.0, tau: 25d}
+    note: "slow driver of regional dust storms: only its excess above 1.2 adds opacity"
+  - target: LOAD
+    unit: MW
+    source: {kind: ou, mean: 24, std: 1.6, tau: 3h}
+    note: "Procyon City grid demand"
+
+custom:
+  - {id: SUN, op: schedule, value: 0, unit: "1", note: "clear-sky irradiance relative to local noon, driven by the day/night plan"}
+  - {id: SUN.heat, op: lag, tau: 3h, inputs: {u: SUN}, unit: "1", note: "the ground and air warm up hours after the sun"}
+  - {id: T_amb, op: sum, weights: [1, 62], inputs: {in0: T_amb.weather, in1: SUN.heat}, unit: degC, note: "a diurnal swing of about 60 K, as measured by Curiosity REMS and Pathfinder"}
+  - {id: TT-200.lag, op: lag, tau: 30s, inputs: {u: T_amb}}
+  - {id: TT-200, op: white_noise, std: 0.3, inputs: {u: TT-200.lag}, unit: degC}
+  - {id: TAU.excess, op: sum, weights: [1.6], bias: -1.9, inputs: {in0: TAU.storm}, unit: "1"}
+  - {id: TAU.storm_part, op: saturation, lo: 0, inputs: {u: TAU.excess}, unit: "1"}
+  - {id: TAU.raw, op: sum, weights: [1, 1], inputs: {in0: TAU.base, in1: TAU.storm_part}, unit: "1"}
+  - {id: TAU, op: saturation, lo: 0.15, hi: 6, inputs: {u: TAU.raw}, unit: "1"}
+  - {id: AT-205, op: bias, offset: 0, period: 1h, inputs: {u: TAU}, unit: "1", note: "sun photometer, one reading an hour"}
+  - {id: SOLAR.trans, op: log_linear, weights: [-0.32], transforms: [lin], inputs: {in0: TAU}, unit: "1", note: "global irradiance falls roughly as exp(-0.32 tau) with diffuse light included (Appelbaum and Flood 1990)"}
+  - {id: SOLAR.mw, op: product, gain: 12.0, inputs: {in0: SUN, in1: SOLAR.trans}, unit: MW, note: "12 MWp field at noon, clear sky"}
+  - {id: SOLAR.lag, op: lag, tau: 120s, inputs: {u: SOLAR.mw}}
+  - {id: JI-205, op: white_noise, std: 0.04, inputs: {u: SOLAR.lag}, unit: MW}
+  - {id: FIS.A, op: product, n: 1, gain: 0.0675, inputs: {in0: TV-201}, unit: MW, note: "0.2 MWt per % drum, 33.7 % Brayton conversion"}
+  - {id: FIS.B, op: product, n: 1, gain: 0.0675, inputs: {in0: TV-202}, unit: MW}
+  - {id: FIS.C, op: product, n: 1, gain: 0.0675, inputs: {in0: TV-203}, unit: MW}
+  - {id: FIS.D, op: product, n: 1, gain: 0.0675, inputs: {in0: TV-204}, unit: MW}
+  - {id: JI-201, op: white_noise, std: 0.02, inputs: {u: FIS.A}, unit: MW}
+  - {id: JI-202, op: white_noise, std: 0.02, inputs: {u: FIS.B}, unit: MW}
+  - {id: JI-203, op: white_noise, std: 0.02, inputs: {u: FIS.C}, unit: MW}
+  - {id: JI-204, op: white_noise, std: 0.02, inputs: {u: FIS.D}, unit: MW}
+  - {id: FIS.total, op: sum, weights: [1, 1, 1, 1], inputs: {in0: FIS.A, in1: FIS.B, in2: FIS.C, in3: FIS.D}, unit: MW}
+  - {id: GEN.total, op: sum, weights: [1, 1], inputs: {in0: FIS.total, in1: SOLAR.mw}, unit: MW}
+  - {id: JI-210, op: white_noise, std: 0.05, inputs: {u: GEN.total}, unit: MW}
+  - {id: JI-211, op: white_noise, std: 0.05, inputs: {u: LOAD}, unit: MW}
+
+regimes:
+  day: {SUN: 1}
+  night: {SUN: 0}
+
+degradation:
+  - {target: TIC-201, kind: sensor_drift, rate: 0.004}
+  - {target: TIC-202, kind: sensor_drift, rate: 0.004}
+  - {target: TIC-203, kind: sensor_drift, rate: 0.004}
+  - {target: TIC-204, kind: sensor_drift, rate: 0.004}
+
+plan:
+  start: day
+  production:
+    cycle: [day, night]
+    campaign: 44387.622
+    over: 3h
+  maintenance:
+    - {task: stop, target: TIC-201, duration: 4d, every: 300d, first: 40d}
+    - {task: stop, target: TIC-202, duration: 4d, every: 300d, first: 115d}
+    - {task: stop, target: TIC-203, duration: 4d, every: 300d, first: 190d}
+    - {task: stop, target: TIC-204, duration: 4d, every: 300d, first: 265d}
+    - {task: calibrate, target: [TIC-201, TIC-202, TIC-203, TIC-204], every: 60d}
+
+faults:
+  - target: [TIC-201, TIC-202, TIC-203, TIC-204]
+    every: 80d
+    kinds: {sensor_bias: 0.5, sensor_noise: 0.5}
+    after: 10d
+
+output:
+  every: 10min

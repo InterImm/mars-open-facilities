@@ -1,0 +1,42 @@
+id: atlantis-ironworks
+name: Atlantis Ironworks
+name_zh: 亚特兰蒂斯城钢铁厂
+city: Atlantis City
+city_zh: 亚特兰蒂斯城
+region: Amazonis Metropolitan Area
+region_zh: 亚马逊城市圈
+lon: -169.397
+lat: 5.496
+operator: Atlantis machinery consortium
+epoch: "2026-09-01T00:00:00Z"
+summary: >-
+  Iron and steel for Martian machinery. Hematite pellets are reduced with hydrogen in a shaft
+  furnace at 900 degC, without coal or coke, and the sponge iron is melted to steel in an
+  electric arc furnace.
+story: >-
+  Atlantis City grew on rich iron ore at a low latitude into the energy and mining town of
+  Amazonis. Many machinery makers built their factories there, though living conditions
+  stayed rough.
+book: https://book.interimm.org/history/mars_immigration/
+process:
+  - "Pellet feed of about 20 t/h of hematite"
+  - "Hydrogen direct reduction in a shaft furnace (as in HYBRIT), Fe2O3 + 3 H2 -> 2 Fe + 3 H2O"
+  - "Metallization measured by the lab every 4 hours, reported an hour later"
+  - "Electric arc furnace, about 0.6 MWh per tonne of steel"
+kpis:
+  - {tag: WT-406, label: Steel, unit: t/h, design: 13.2}
+  - {tag: WT-405, label: Sponge iron, unit: t/h, design: 14.3}
+  - {tag: JI-410, label: Power draw, unit: MW, design: 70, kind: input}
+tags:
+  - {tag: FT-401, label: Pellet feed, unit: t/h, group: Shaft furnace}
+  - {tag: FT-402, label: Hydrogen make-up, unit: kg/h, group: Shaft furnace}
+  - {tag: TT-403, label: Reducing gas temperature, unit: degC, group: Shaft furnace}
+  - {tag: TT-404, label: Recycle gas temperature, unit: degC, group: Shaft furnace}
+  - {tag: AT-403, label: Metallization (lab), unit: "%", group: Shaft furnace}
+  - {tag: WT-405, label: Sponge iron output, unit: t/h, group: Products}
+  - {tag: WT-406, label: Steel output, unit: t/h, group: Products}
+  - {tag: JI-410, label: Power draw, unit: MW, group: Utilities}
+sources:
+  - {label: "HYBRIT: fossil-free steel by hydrogen direct reduction", url: "https://www.hybritdevelopment.se/en/"}
+  - {label: "Vogl, Åhman and Nilsson 2018, Assessment of hydrogen direct reduction for fossil-free steelmaking, J. Cleaner Production 203", url: "https://doi.org/10.1016/j.jclepro.2018.08.279"}
+  - {label: "Hematite on Mars (Christensen et al. 2001, JGR Planets)", url: "https://doi.org/10.1029/2000JE001415"}

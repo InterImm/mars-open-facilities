@@ -1,0 +1,44 @@
+id: procyon-propellant
+name: Procyon Propellant Works
+name_zh: 南河城推进剂工厂
+city: Procyon City
+city_zh: 南河城
+region: Isidis Metropolitan Area
+region_zh: 伊希地城市圈
+lon: 84.624
+lat: 16.181
+operator: UPI (United Planetary Industries)
+epoch: "2026-09-01T00:00:00Z"
+summary: >-
+  Methane and oxygen for the surface-to-orbit shuttles. Compressors take CO2 from the
+  atmosphere, electrolysers split water into hydrogen and oxygen, and a Sabatier reactor
+  turns CO2 and hydrogen into methane and water, which goes back to the electrolysers.
+story: >-
+  The first factory on the Martian surface: it was running before the first pioneers landed
+  in 2070, and by 2075 it covered the propellant needed between the surface and orbit.
+book: https://book.interimm.org/history/mars_immigration/
+process:
+  - "Atmospheric CO2 acquisition: freezer and compressor trains"
+  - "PEM water electrolysis, about 53 kWh per kg of hydrogen"
+  - "Sabatier reactor, CO2 + 4 H2 -> CH4 + 2 H2O, Ru/Al2O3 catalyst at 330 degC"
+  - "Liquefaction and storage of CH4 and O2"
+kpis:
+  - {tag: FT-105, label: Methane, unit: kg/h, design: 250}
+  - {tag: FT-106, label: Oxygen, unit: kg/h, design: 1000}
+  - {tag: JI-110, label: Power draw, unit: kW, design: 7900, kind: input}
+tags:
+  - {tag: FT-101, label: CO2 feed, unit: kg/h, group: Feeds}
+  - {tag: FT-102, label: H2 feed, unit: kg/h, group: Feeds}
+  - {tag: TT-103, label: Reactor temperature, unit: degC, group: Sabatier reactor}
+  - {tag: TT-104, label: Reactor feed temperature, unit: degC, group: Sabatier reactor}
+  - {tag: AT-103, label: CO2 conversion (GC), unit: fraction, group: Sabatier reactor, scale: 100, display_unit: "%"}
+  - {tag: TIC-103.out, label: Reactor heater output, unit: "%", group: Sabatier reactor}
+  - {tag: FT-105, label: Methane production, unit: kg/h, group: Products}
+  - {tag: FT-106, label: Oxygen production, unit: kg/h, group: Products}
+  - {tag: JI-110, label: Power draw, unit: kW, group: Utilities}
+  - {tag: PT-100, label: Atmospheric pressure, unit: Pa, group: Site}
+sources:
+  - {label: "Sabatier Carbon Dioxide Reduction Assembly Development for Closed Loop Water Recovery (NASA and Hamilton Sundstrand, 2010)", url: "https://ntrs.nasa.gov/citations/20100033195"}
+  - {label: "Mars Design Reference Architecture 5.0, ISRU addendum (NASA SP-2009-566-ADD)", url: "https://www.nasa.gov/pdf/373667main_NASA-SP-2009-566-ADD.pdf"}
+  - {label: "Electrolyser energy use, about 50 to 55 kWh/kg H2 (IEA Global Hydrogen Review)", url: "https://www.iea.org/reports/global-hydrogen-review-2023"}
+  - {label: "Mars surface pressure and scale height (NASA Mars Fact Sheet)", url: "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html"}

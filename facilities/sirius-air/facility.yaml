@@ -1,0 +1,42 @@
+id: sirius-air
+name: Sirius Air Works
+name_zh: 天狼城空气工厂
+city: Sirius City
+city_zh: 天狼城
+region: Isidis Metropolitan Area
+region_zh: 伊希地城市圈
+lon: 86.578
+lat: 7.439
+operator: IIA (InterImm Agency)
+epoch: "2026-09-01T00:00:00Z"
+summary: >-
+  Breathing oxygen for the domes of Sirius City. Solid-oxide stacks, a scaled-up MOXIE, split
+  atmospheric CO2 at 800 degC into oxygen and carbon monoxide. The dome atmosphere loop
+  keeps the oxygen fraction at 21 %.
+story: >-
+  Air works, water works and power stations were built together with the greenhouses; with
+  them the Isidis colonies could take in more and more settlers.
+book: https://book.interimm.org/history/mars_immigration/
+process:
+  - "CO2 compression and preheating"
+  - "Solid-oxide electrolysis stacks, 2 CO2 -> 2 CO + O2, at 800 degC; stacks are replaced about every 180 days"
+  - "Dome atmosphere: O2 make-up control, CO2 and pressure monitoring"
+kpis:
+  - {tag: FT-307, label: Oxygen, unit: kg/h, design: 400}
+  - {tag: AT-303, label: Dome O2, unit: "%", design: 21, kind: level}
+  - {tag: JI-310, label: Power draw, unit: kW, design: 4600, kind: input}
+tags:
+  - {tag: FT-301, label: CO2 feed, unit: kg/h, group: Electrolysis}
+  - {tag: TT-302, label: Stack temperature, unit: degC, group: Electrolysis}
+  - {tag: TT-304, label: Stack feed temperature, unit: degC, group: Electrolysis}
+  - {tag: AT-302, label: CO2 utilization, unit: fraction, group: Electrolysis, scale: 100, display_unit: "%"}
+  - {tag: FT-307, label: Oxygen production, unit: kg/h, group: Electrolysis}
+  - {tag: JI-310, label: Power draw, unit: kW, group: Electrolysis}
+  - {tag: AT-303, label: Dome O2 fraction, unit: "%", group: Dome atmosphere}
+  - {tag: AIC-303.out, label: O2 make-up valve, unit: "%", group: Dome atmosphere}
+  - {tag: AT-306, label: Dome CO2, unit: ppm, group: Dome atmosphere}
+  - {tag: PT-305, label: Dome pressure, unit: kPa, group: Dome atmosphere}
+sources:
+  - {label: "Hecht et al. 2021, Mars Oxygen ISRU Experiment (MOXIE), Space Science Reviews 217", url: "https://doi.org/10.1007/s11214-020-00782-8"}
+  - {label: "Hoffman et al. 2022, Mars Oxygen ISRU Experiment (MOXIE) performance on Mars, Science Advances", url: "https://doi.org/10.1126/sciadv.abp8636"}
+  - {label: "NASA Baseline Values and Assumptions Document (BVAD), 2022", url: "https://ntrs.nasa.gov/citations/20210024855"}

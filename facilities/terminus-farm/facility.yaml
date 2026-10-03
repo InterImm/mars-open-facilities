@@ -1,0 +1,41 @@
+id: terminus-farm
+name: Daoya Farm No. 3
+name_zh: 稻芽三号农场
+city: Terminus City
+city_zh: 端点城
+region: Hellas Metropolitan Area
+region_zh: 希腊城市圈
+lon: 86.896
+lat: -38.142
+operator: Daoya (稻芽)
+log_transitions: false
+epoch: "2026-09-01T00:00:00Z"
+summary: >-
+  A 2 ha LED-lit growth hall of wheat and soybean. Lights run 16 hours of each sol; air
+  temperature and CO2 enrichment follow them, and the crop's growth follows the light and
+  the CO2.
+story: >-
+  Terminus City was designed as a farming city. Daoya, founded there, runs farms in Isidis and
+  Hellas and sells improved crops to the nearest Martian cities.
+book: https://book.interimm.org/history/mars_immigration/
+process:
+  - "Photoperiod of 16 h at 600 umol/m2/s, LEDs at about 3 umol/J"
+  - "CO2 enrichment to 1,200 ppm when lit, 800 ppm in the dark"
+  - "Air temperature 24 degC lit, 18 degC dark"
+  - "Biomass growth about 0.6 g of dry matter per mol of photons"
+kpis:
+  - {tag: WT-705, label: Biomass growth, unit: kg/h, design: 17, note: "design is the sol average: 26 kg/h for the 16 lit hours"}
+  - {tag: AT-702, label: CO2, unit: ppm, design: 1200, kind: level}
+  - {tag: JI-706, label: Power draw, unit: MW, design: 4.6, kind: input}
+tags:
+  - {tag: QT-704, label: Light at canopy (PPFD), unit: umol/m2/s, group: Climate}
+  - {tag: TT-701, label: Air temperature, unit: degC, group: Climate}
+  - {tag: AT-702, label: CO2 concentration, unit: ppm, group: Climate}
+  - {tag: MT-703, label: Relative humidity, unit: "%", group: Climate}
+  - {tag: AIC-702.out, label: CO2 injection valve, unit: "%", group: Climate}
+  - {tag: WT-705, label: Biomass growth (dry), unit: kg/h, group: Crop}
+  - {tag: JI-706, label: Power draw, unit: MW, group: Utilities}
+sources:
+  - {label: "System development and early biological tests in NASA's Biomass Production Chamber (NASA)", url: "https://ntrs.nasa.gov/citations/19900016140"}
+  - {label: "Bugbee and Salisbury 1988, Exploring the limits of crop productivity, Plant Physiology 88", url: "https://doi.org/10.1104/pp.88.3.869"}
+  - {label: "Kusuma, Pattison and Bugbee 2020, From physics to fixtures to food: LED efficacy, Horticulture Research 7", url: "https://doi.org/10.1038/s41438-020-0283-7"}

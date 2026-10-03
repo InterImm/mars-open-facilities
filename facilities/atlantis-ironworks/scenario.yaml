@@ -1,0 +1,122 @@
+# Atlantis Ironworks (Amazonis Planitia): hydrogen direct reduction of hematite pellets in a
+# shaft furnace (as in HYBRIT), then an electric arc furnace. Fe2O3 + 3 H2 -> 2 Fe + 3 H2O.
+# Template flows are read as t/h (ore) and kg/h (H2), temperatures as degC.
+seed: 404
+duration: 3650d
+dt: 5s
+library: process@1
+
+units:
+  - id: FIC-401
+    template: flow_loop
+    sp: 20
+    span: [0, 30]
+    K: 0.33
+    tau: 60s
+    theta: 10s
+    Kp: 0
+    tuning: simc
+    detune: 2
+    note: "hematite pellet feed to the shaft furnace, t/h"
+  - id: FIC-402
+    template: flow_loop
+    sp: 1100
+    mode: CAS
+    span: [0, 2000]
+    K: 18
+    tau: 15s
+    theta: 2s
+    Kp: 1
+    tuning: simc
+    detune: 2
+    note: "fresh H2 to the reducing-gas loop, kg/h; ratio-controlled at 55 kg per t pellets (about 1.5 x the 54 kg/t DRI of stoichiometry, the excess recycled)"
+  - id: TIC-403
+    template: reactor
+    sp: 900
+    span: [0, 1200]
+    K: 9.5
+    tau: 2400s
+    theta: 180s
+    Kd: 0.3
+    base: 0
+    tuning: simc
+    detune: 2
+    q_ref: 94.5
+    t_ref: 900
+    E_R: 2500
+    b: 0.35
+    volume: 300
+    F_nom: 20
+    tau_mix: 3h
+    max_residence: 12d
+    period: 60s
+    lab_span: [0, 100]
+    lab_period: 4h
+    lab_delay: 1h
+    lab_noise: 0.6
+    note: "reducing gas inlet temperature; the lab property is the DRI metallization in % (reduction takes 6 to 8 h in the shaft)"
+
+exogenous:
+  - target: FIC-402.pressure
+    unit: bar
+    source: {kind: ou, mean: 0, std: 20, tau: 1h}
+  - {target: FIC-402.rsp, from: FFC-402.out}
+  - {target: TIC-403.flow, from: FIC-401.cv}
+  - {target: TIC-403.ratio, from: RX-403.ratio}
+  - target: TIC-403.feed_temp
+    unit: degC
+    source: {kind: ou, mean: 300, std: 10, tau: 3h}
+    measured: {tag: TT-404, sensor: thermocouple, span: [0, 600]}
+    note: "recycled top gas after the scrubber and preheater"
+  - target: EAF.load
+    unit: MW
+    source: {kind: ou, mean: 0, std: 2.2, tau: 15min}
+    note: "arc furnace power swings between heats"
+
+custom:
+  - {id: FFC-402.ratio, op: schedule, value: 55, unit: kg/t}
+  - {id: FFC-402.out, op: product, inputs: {in0: FT-401, in1: FFC-402.ratio}, unit: kg/h}
+  - {id: RX-403.ratio, op: log_linear, weights: [1, -1], transforms: [log, log], bias: -4.0073, inputs: {in0: FIC-402.cv, in1: FIC-401.cv}, unit: "1", note: "H2 to ore ratio relative to 55 kg/t"}
+  - {id: DRI.rate, op: product, gain: 0.0072, inputs: {in0: FIC-401.cv, in1: TIC-403.q_product}, unit: t/h, note: "0.70 t Fe per t hematite plus gangue: 0.72 t DRI per t pellets at 100 % metallization"}
+  - {id: DRI.lag, op: lag, tau: 2h, inputs: {u: DRI.rate}}
+  - {id: WT-405, op: white_noise, std: 0.15, inputs: {u: DRI.lag}, unit: t/h}
+  - {id: STEEL.rate, op: product, n: 1, gain: 0.92, inputs: {in0: DRI.lag}, unit: t/h, note: "EAF yield on DRI"}
+  - {id: WT-406, op: white_noise, std: 0.2, inputs: {u: STEEL.rate}, unit: t/h}
+  - id: POWER.mw
+    op: sum
+    weights: [0.053, 0.62, 0.012, 1]
+    bias: 1.5
+    inputs: {in0: FIC-402.cv, in1: STEEL.rate, in2: TV-403, in3: EAF.load}
+    unit: MW
+    note: "electrolysis 53 kWh/kg H2, EAF 0.62 MWh/t steel, gas heater 12 kW per %, 1.5 MW auxiliaries"
+  - {id: JI-410, op: white_noise, std: 0.3, inputs: {u: POWER.mw}, unit: MW}
+
+regimes:
+  full: {FIC-401.sp: 20}
+  reduced: {FIC-401.sp: 14}
+
+degradation:
+  - {target: TIC-403, kind: fouling, rate: 0.002, t_ref: 900}
+  - {target: FIC-401, kind: valve_wear, rate: 0.03}
+  - {target: FIC-401, kind: sensor_drift, rate: 0.02}
+
+plan:
+  start: full
+  production:
+    next: {full: {reduced: 1}, reduced: {full: 1}}
+    campaign: {full: {lognormal: {median: 9d, sigma: 0.5}}, reduced: {lognormal: {median: 3d, sigma: 0.5}}}
+    over: 6h
+  maintenance:
+    - {task: stop, target: FIC-401, duration: 3d, every: 75d, first: 30d, note: "planned shutdown: refractory and grate inspection"}
+    - {task: clean, target: TIC-403, every: 75d, first: 31d}
+    - {task: calibrate, target: FIC-401, every: 30d}
+    - {task: replace_valve, target: FIC-401, every: 150d}
+
+faults:
+  - target: [FIC-401, FIC-402, TIC-403]
+    every: 35d
+    kinds: {sensor_bias: 0.35, sensor_noise: 0.25, valve_stiction: 0.4}
+    after: 5d
+
+output:
+  every: 10min

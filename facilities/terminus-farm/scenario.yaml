@@ -1,0 +1,69 @@
+# Daoya Farm No. 3 (Terminus City, Hellas Planitia): a 2 ha LED-lit wheat and soybean
+# growth hall. Lights run 16 h of each sol; the climate follows them. AIC-702 is CO2 in ppm,
+# TIC-701 air temperature in degC; the custom signals are in kg/h and MW.
+seed: 707
+duration: 3650d
+dt: 10s
+library: process@1
+
+units:
+  - {id: TIC-701, template: temperature_loop, sp: 23, span: [0, 40], K: 0.18, tau: 40min, theta: 2min, Kd: 1, tau_d: 30min, base: 9, tuning: simc, detune: 2, note: "air temperature, held by the heating and cooling coils; lamp heat enters at the feed port"}
+  - {id: AIC-702, template: temperature_loop, sp: 1200, span: [0, 3000], K: 14, tau: 20min, theta: 1min, Kd: 1, tau_d: 15min, base: 500, tuning: simc, detune: 5, sensor: online_analyzer, note: "CO2 enrichment, ppm; the crop's uptake enters at the feed port"}
+
+exogenous:
+  - {target: TIC-701.feed_temp, from: LAMP.heat}
+  - {target: AIC-702.feed_temp, from: UPTAKE}
+  - target: RH.true
+    unit: "%"
+    source: {kind: ou, mean: 68, std: 4, tau: 3h}
+    measured: {tag: MT-703, sensor: radar_level, span: [0, 100]}
+
+custom:
+  - {id: LIGHT, op: schedule, value: 0, unit: umol/m2/s, note: "PPFD at canopy, set by the photoperiod plan"}
+  - {id: LIGHT.ramp, op: lag, tau: 5min, inputs: {u: LIGHT}}
+  - {id: QT-704, op: white_noise, std: 4, inputs: {u: LIGHT.ramp}, unit: umol/m2/s}
+  - {id: LAMP.heat, op: product, n: 1, gain: 0.012, inputs: {in0: LIGHT.ramp}, unit: degC, note: "lamp heat load as an equivalent air temperature rise"}
+  - {id: UPTAKE, op: product, n: 1, gain: -0.55, inputs: {in0: LIGHT.ramp}, unit: ppm}
+  - {id: CO2.factor, op: log_linear, weights: [0.3], transforms: [log], bias: -2.127, inputs: {in0: AIC-702.cv}, unit: "1", note: "growth ~ (CO2/1200)^0.3, the enrichment response of C3 crops"}
+  - id: GROWTH
+    op: product
+    gain: 0.0432
+    inputs: {in0: LIGHT.ramp, in1: CO2.factor}
+    unit: kg/h
+    note: "20000 m2 x PPFD x 3600 s x 0.6 g dry biomass per mol photons (NASA Biomass Production Chamber)"
+  - {id: GROWTH.lag, op: lag, tau: 30min, inputs: {u: GROWTH}}
+  - {id: WT-705, op: white_noise, std: 0.3, inputs: {u: GROWTH.lag}, unit: kg/h}
+  - id: POWER.mw
+    op: sum
+    weights: [0.0067, 0.004]
+    bias: 0.35
+    inputs: {in0: LIGHT.ramp, in1: TV-701}
+    unit: MW
+    note: "LEDs at 3 umol/J over 20000 m2 (6.7 kW per umol/m2/s), coils 4 kW per %, 0.35 MW fans and pumps"
+  - {id: JI-706, op: white_noise, std: 0.02, inputs: {u: POWER.mw}, unit: MW}
+
+regimes:
+  lights_on: {LIGHT: 600, TIC-701.sp: 24, AIC-702.sp: 1200}
+  lights_off: {LIGHT: 0, TIC-701.sp: 18, AIC-702.sp: 800}
+
+degradation:
+  - {target: AIC-702, kind: sensor_drift, rate: 0.05}
+  - {target: TIC-701, kind: valve_wear, rate: 0.02}
+
+plan:
+  start: lights_on
+  production:
+    cycle: [lights_on, lights_off]
+    campaign: {lights_on: 16h, lights_off: 31175.244}
+    over: 20min
+  maintenance:
+    - {task: calibrate, target: AIC-702, every: 21d}
+
+faults:
+  - target: [TIC-701, AIC-702]
+    every: 60d
+    kinds: {sensor_bias: 0.5, sensor_noise: 0.2, valve_stiction: 0.3}
+    after: 5d
+
+output:
+  every: 10min
