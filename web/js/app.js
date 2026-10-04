@@ -221,7 +221,9 @@ async function facility(view, id) {
     if (!g) groups.push(g = { name: t.group, tags: [] });
     g.tags.push(t);
   }
+  let shown = 3;
   const draw = async (range) => {
+    shown = range;
     for (const b of view.querySelectorAll('[data-range]')) b.setAttribute('aria-pressed', String(b.dataset.range === String(range)));
     let src = recent;
     if (range === 'all') {
@@ -245,6 +247,7 @@ async function facility(view, id) {
     b.addEventListener('click', () => draw(b.dataset.range === 'all' ? 'all' : Number(b.dataset.range)));
   }
   await whenUplot();
+  redrawCharts = () => { if (document.contains(f('charts'))) draw(shown); };
   draw(3);
 }
 
@@ -259,6 +262,10 @@ function whenUplot() {
     check();
   });
 }
+
+// Charts take their axis colours from the kit tokens, so redraw them when the theme changes.
+let redrawCharts = null;
+document.addEventListener('interimm:theme', () => { if (redrawCharts) redrawCharts(); });
 
 const PALETTE = ['#ff6b3d', '#3d8bff', '#22a77a', '#c48a00', '#a05cff', '#e0457b'];
 

@@ -17,11 +17,15 @@
 .status-maintenance { color: #3d7bff; }
 .status-offline { color: #d64545; }
 @media (prefers-color-scheme: dark) {
-  .status-operating { color: #4fd59d; }
-  .status-reduced { color: #f2b84b; }
-  .status-maintenance { color: #7aa7ff; }
-  .status-offline { color: #ff7a7a; }
+  :root:not([data-theme="light"]) .status-operating { color: #4fd59d; }
+  :root:not([data-theme="light"]) .status-reduced { color: #f2b84b; }
+  :root:not([data-theme="light"]) .status-maintenance { color: #7aa7ff; }
+  :root:not([data-theme="light"]) .status-offline { color: #ff7a7a; }
 }
+:root[data-theme="dark"] .status-operating { color: #4fd59d; }
+:root[data-theme="dark"] .status-reduced { color: #f2b84b; }
+:root[data-theme="dark"] .status-maintenance { color: #7aa7ff; }
+:root[data-theme="dark"] .status-offline { color: #ff7a7a; }
 
 /* overview cards */
 .facility-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr)); }
