@@ -1,0 +1,1 @@
+[{"time":"2219-09-12T15:09:05Z","event":"Operating mode changed from full to reduced","targets":["FIC-602.sp"]},{"time":"2219-09-18T06:39:12Z","event":"Operating mode changed from reduced to full","targets":["FIC-602.sp"]},{"time":"2219-10-01T00:00:00Z","event":"Instruments calibrated","targets":["LT-603.bias.offset","LT-603.drift"]}]

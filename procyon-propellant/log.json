@@ -1,0 +1,1 @@
+[{"time":"2219-09-24T20:44:20Z","event":"Operating mode changed from full to curtailed","targets":["FIC-101.sp"]},{"time":"2219-09-29T11:09:26Z","event":"Operating mode changed from curtailed to full","targets":["FIC-101.sp"]},{"time":"2219-09-29T23:23:22Z","event":"Instruments calibrated","targets":["FT-101.bias.offset","FT-101.drift","FT-102.bias.offset","FT-102.drift"]}]
